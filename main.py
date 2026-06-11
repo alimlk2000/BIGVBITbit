@@ -6,7 +6,7 @@ import requests
 
 # ---------------- تنظیمات ----------------
 
-TOKEN = "8888586418:AAGE3PHQRBVu2kN_Ngo19MCwnWZ19kmTRHk"
+TOKEN = "8888586418:AAF8Jj4PCrCxvghQhL6GqTjR5ZI0Tv6snqQ"
 
 ADMIN_ID = 7573910509
 
