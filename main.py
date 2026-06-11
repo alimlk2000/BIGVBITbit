@@ -3,37 +3,42 @@ from telebot import types
 import json
 import os
 import requests
+import time
 
-# ---------------- تنظیمات ----------------
+# ================= تنظیمات =================
 
-TOKEN = "8888586418:AAF8Jj4PCrCxvghQhL6GqTjR5ZI0Tv6snqQ"
+TOKEN = "8888586418:AAEp5Ozd6c2R3y75X37C7BdML6gzqGtwJk8"
 
 ADMIN_ID = 7573910509
 
-HOTWATCHER_API = " B5A92921FD1848FC3F1E297EFF3E18C0"
+HOTWATCHER_API = "B5A92921FD1848FC3F1E297EFF3E18C0"
 
 bot = telebot.TeleBot(TOKEN)
 
 DB_FILE = "users.json"
 
-# ---------------- دیتابیس ----------------
+# ================= ساخت دیتابیس =================
 
 if not os.path.exists(DB_FILE):
 
     with open(DB_FILE, "w") as f:
         json.dump({}, f)
 
+# ================= خواندن کاربران =================
+
 def load_users():
 
     with open(DB_FILE, "r") as f:
         return json.load(f)
+
+# ================= ذخیره کاربران =================
 
 def save_users(data):
 
     with open(DB_FILE, "w") as f:
         json.dump(data, f)
 
-# ---------------- منو ----------------
+# ================= منوی اصلی =================
 
 def show_menu(chat_id, name, user_id):
 
@@ -44,6 +49,7 @@ def show_menu(chat_id, name, user_id):
 
     markup.add(btn1, btn2)
 
+    # پنل ادمین
     if user_id == ADMIN_ID:
 
         btn3 = types.KeyboardButton("👥 کاربران")
@@ -57,7 +63,7 @@ def show_menu(chat_id, name, user_id):
         reply_markup=markup
     )
 
-# ---------------- استارت ----------------
+# ================= استارت =================
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -68,6 +74,7 @@ def start(message):
 
     name = message.from_user.first_name
 
+    # ثبت کاربر جدید
     if user_id not in users:
 
         users[user_id] = {
@@ -78,6 +85,7 @@ def start(message):
 
         save_users(users)
 
+        # دکمه تایید
         markup = types.InlineKeyboardMarkup()
 
         btn = types.InlineKeyboardButton(
@@ -95,6 +103,7 @@ def start(message):
 
     users = load_users()
 
+    # اگر تایید نشده
     if users[user_id]["approved"] == False:
 
         bot.send_message(
@@ -104,9 +113,14 @@ def start(message):
 
         return
 
-    show_menu(message.chat.id, name, int(user_id))
+    # نمایش منو
+    show_menu(
+        message.chat.id,
+        name,
+        int(user_id)
+    )
 
-# ---------------- تایید کاربر ----------------
+# ================= تایید کاربر =================
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
@@ -139,7 +153,7 @@ def callback(call):
             "کاربر تایید شد ✅"
         )
 
-# ---------------- موجودی ----------------
+# ================= موجودی =================
 
 @bot.message_handler(func=lambda m: m.text == "💰 موجودی من")
 def balance(message):
@@ -155,7 +169,7 @@ def balance(message):
         f"💰 موجودی شما: {balance} تومان"
     )
 
-# ---------------- خرید ووچر ----------------
+# ================= خرید ووچر =================
 
 @bot.message_handler(func=lambda m: m.text == "🛒 خرید ووچر")
 def buy(message):
@@ -217,7 +231,7 @@ def process_buy(message):
 
             bot.send_message(
                 message.chat.id,
-                f"✅ ووچر خریداری شد\n\n🎫 کد:\n{voucher}"
+                f"✅ ووچر خریداری شد\n\n🎫 کد ووچر:\n{voucher}"
             )
 
         else:
@@ -227,14 +241,16 @@ def process_buy(message):
                 "❌ خطا در خرید ووچر"
             )
 
-    except:
+    except Exception as e:
+
+        print(e)
 
         bot.send_message(
             message.chat.id,
             "❌ مبلغ اشتباه است"
         )
 
-# ---------------- کاربران ----------------
+# ================= کاربران =================
 
 @bot.message_handler(func=lambda m: m.text == "👥 کاربران")
 def users_list(message):
@@ -261,7 +277,7 @@ def users_list(message):
         text
     )
 
-# ---------------- شارژ کاربر ----------------
+# ================= شارژ کاربر =================
 
 @bot.message_handler(func=lambda m: m.text == "💳 شارژ کاربر")
 def charge_user(message):
@@ -314,13 +330,31 @@ def process_charge(message):
             f"💰 کیف پول شما {amount} تومان شارژ شد"
         )
 
-    except:
+    except Exception as e:
+
+        print(e)
 
         bot.send_message(
             message.chat.id,
             "❌ فرمت اشتباه است"
         )
 
+# ================= اجرای دائمی =================
+
 print("BOT IS RUNNING...")
 
-bot.infinity_polling(skip_pending=True)
+while True:
+
+    try:
+
+        bot.infinity_polling(
+            skip_pending=True,
+            timeout=60,
+            long_polling_timeout=60
+        )
+
+    except Exception as e:
+
+        print(e)
+
+        time.sleep(5)
