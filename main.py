@@ -46,16 +46,18 @@ def show_menu(chat_id, name, user_id):
 
     btn1 = types.KeyboardButton("💰 موجودی من")
     btn2 = types.KeyboardButton("🛒 خرید ووچر")
+    btn3 = types.KeyboardButton("💸 فروش ووچر")
 
     markup.add(btn1, btn2)
+    markup.add(btn3)
 
     # پنل ادمین
     if user_id == ADMIN_ID:
 
-        btn3 = types.KeyboardButton("👥 کاربران")
-        btn4 = types.KeyboardButton("💳 شارژ کاربر")
+        btn4 = types.KeyboardButton("👥 کاربران")
+        btn5 = types.KeyboardButton("💳 شارژ کاربر")
 
-        markup.add(btn3, btn4)
+        markup.add(btn4, btn5)
 
     bot.send_message(
         chat_id,
@@ -85,7 +87,6 @@ def start(message):
 
         save_users(users)
 
-        # دکمه تایید
         markup = types.InlineKeyboardMarkup()
 
         btn = types.InlineKeyboardButton(
@@ -113,7 +114,6 @@ def start(message):
 
         return
 
-    # نمایش منو
     show_menu(
         message.chat.id,
         name,
@@ -166,7 +166,7 @@ def balance(message):
 
     bot.send_message(
         message.chat.id,
-        f"💰 موجودی شما: {balance} تومان"
+        f"💰 موجودی شما: {balance}"
     )
 
 # ================= خرید ووچر =================
@@ -188,7 +188,7 @@ def process_buy(message):
 
     try:
 
-        amount = int(message.text)
+        amount = float(message.text)
 
         users = load_users()
 
@@ -206,24 +206,26 @@ def process_buy(message):
             return
 
         headers = {
-            "Authorization": f"Bearer {HOTWATCHER_API}"
+            "authorization": HOTWATCHER_API,
+            "Content-Type": "application/json"
         }
 
         data = {
-            "amount": amount
+            "coin": "USDT",
+            "amount": str(amount)
         }
 
         response = requests.post(
-            "https://hotvoucher.com/api/buy",
+            "https://api.uwallet.biz/v1/voucher",
             headers=headers,
             json=data
         )
 
         result = response.json()
 
-        if result.get("success"):
+        if "code" in result:
 
-            voucher = result["voucher"]
+            voucher = result["code"]
 
             users[user_id]["balance"] -= amount
 
@@ -231,14 +233,14 @@ def process_buy(message):
 
             bot.send_message(
                 message.chat.id,
-                f"✅ ووچر خریداری شد\n\n🎫 کد ووچر:\n{voucher}"
+                f"✅ ووچر ساخته شد\n\n🎫 کد ووچر:\n{voucher}"
             )
 
         else:
 
             bot.send_message(
                 message.chat.id,
-                "❌ خطا در خرید ووچر"
+                f"❌ خطا:\n{result}"
             )
 
     except Exception as e:
@@ -247,7 +249,79 @@ def process_buy(message):
 
         bot.send_message(
             message.chat.id,
-            "❌ مبلغ اشتباه است"
+            "❌ خطا در خرید ووچر"
+        )
+
+# ================= فروش ووچر =================
+
+@bot.message_handler(func=lambda m: m.text == "💸 فروش ووچر")
+def sell_voucher(message):
+
+    msg = bot.send_message(
+        message.chat.id,
+        "کد ووچر را ارسال کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        process_sell_voucher
+    )
+
+def process_sell_voucher(message):
+
+    try:
+
+        code = message.text
+
+        headers = {
+            "authorization": HOTWATCHER_API,
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "coin": "USDT",
+            "code": code
+        }
+
+        response = requests.post(
+            "https://api.uwallet.biz/v1/voucher/use",
+            headers=headers,
+            json=data
+        )
+
+        result = response.json()
+
+        if result.get("status") == "confirm":
+
+            amount = float(result["receive"])
+
+            users = load_users()
+
+            user_id = str(message.from_user.id)
+
+            users[user_id]["balance"] += amount
+
+            save_users(users)
+
+            bot.send_message(
+                message.chat.id,
+                f"✅ ووچر نقد شد\n\n💰 مبلغ: {amount}"
+            )
+
+        else:
+
+            bot.send_message(
+                message.chat.id,
+                "❌ ووچر نامعتبر است"
+            )
+
+    except Exception as e:
+
+        print(e)
+
+        bot.send_message(
+            message.chat.id,
+            "❌ خطا در فروش ووچر"
         )
 
 # ================= کاربران =================
@@ -305,7 +379,7 @@ def process_charge(message):
 
         user_id = data[0]
 
-        amount = int(data[1])
+        amount = float(data[1])
 
         if user_id not in users:
 
@@ -327,7 +401,7 @@ def process_charge(message):
 
         bot.send_message(
             int(user_id),
-            f"💰 کیف پول شما {amount} تومان شارژ شد"
+            f"💰 کیف پول شما {amount} شارژ شد"
         )
 
     except Exception as e:
