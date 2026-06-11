@@ -2,31 +2,39 @@ import telebot
 from telebot import types
 import json
 import os
+import requests
+
+# ---------------- تنظیمات ----------------
 
 TOKEN = "8888586418:AAGE3PHQRBVu2kN_Ngo19MCwnWZ19kmTRHk"
 
 ADMIN_ID = 7573910509
 
+HOTWATCHER_API = " B5A92921FD1848FC3F1E297EFF3E18C0"
+
 bot = telebot.TeleBot(TOKEN)
 
 DB_FILE = "users.json"
 
-# ساخت فایل دیتابیس
+# ---------------- دیتابیس ----------------
+
 if not os.path.exists(DB_FILE):
+
     with open(DB_FILE, "w") as f:
         json.dump({}, f)
 
-# خواندن کاربران
 def load_users():
+
     with open(DB_FILE, "r") as f:
         return json.load(f)
 
-# ذخیره کاربران
 def save_users(data):
+
     with open(DB_FILE, "w") as f:
         json.dump(data, f)
 
-# منوی اصلی
+# ---------------- منو ----------------
+
 def show_menu(chat_id, name, user_id):
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -37,6 +45,7 @@ def show_menu(chat_id, name, user_id):
     markup.add(btn1, btn2)
 
     if user_id == ADMIN_ID:
+
         btn3 = types.KeyboardButton("👥 کاربران")
         btn4 = types.KeyboardButton("💳 شارژ کاربر")
 
@@ -48,13 +57,15 @@ def show_menu(chat_id, name, user_id):
         reply_markup=markup
     )
 
-# استارت
+# ---------------- استارت ----------------
+
 @bot.message_handler(commands=['start'])
 def start(message):
 
     users = load_users()
 
     user_id = str(message.from_user.id)
+
     name = message.from_user.first_name
 
     if user_id not in users:
@@ -95,7 +106,8 @@ def start(message):
 
     show_menu(message.chat.id, name, int(user_id))
 
-# تایید کاربر
+# ---------------- تایید کاربر ----------------
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
 
@@ -127,7 +139,8 @@ def callback(call):
             "کاربر تایید شد ✅"
         )
 
-# موجودی
+# ---------------- موجودی ----------------
+
 @bot.message_handler(func=lambda m: m.text == "💰 موجودی من")
 def balance(message):
 
@@ -142,31 +155,87 @@ def balance(message):
         f"💰 موجودی شما: {balance} تومان"
     )
 
-# خرید ووچر
+# ---------------- خرید ووچر ----------------
+
 @bot.message_handler(func=lambda m: m.text == "🛒 خرید ووچر")
 def buy(message):
 
-    users = load_users()
+    msg = bot.send_message(
+        message.chat.id,
+        "مبلغ ووچر را وارد کنید"
+    )
 
-    user_id = str(message.from_user.id)
+    bot.register_next_step_handler(
+        msg,
+        process_buy
+    )
 
-    balance = users[user_id]["balance"]
+def process_buy(message):
 
-    if balance <= 0:
+    try:
+
+        amount = int(message.text)
+
+        users = load_users()
+
+        user_id = str(message.from_user.id)
+
+        balance = users[user_id]["balance"]
+
+        if balance < amount:
+
+            bot.send_message(
+                message.chat.id,
+                "❌ موجودی کافی نیست"
+            )
+
+            return
+
+        headers = {
+            "Authorization": f"Bearer {HOTWATCHER_API}"
+        }
+
+        data = {
+            "amount": amount
+        }
+
+        response = requests.post(
+            "https://hotvoucher.com/api/buy",
+            headers=headers,
+            json=data
+        )
+
+        result = response.json()
+
+        if result.get("success"):
+
+            voucher = result["voucher"]
+
+            users[user_id]["balance"] -= amount
+
+            save_users(users)
+
+            bot.send_message(
+                message.chat.id,
+                f"✅ ووچر خریداری شد\n\n🎫 کد:\n{voucher}"
+            )
+
+        else:
+
+            bot.send_message(
+                message.chat.id,
+                "❌ خطا در خرید ووچر"
+            )
+
+    except:
 
         bot.send_message(
             message.chat.id,
-            "❌ موجودی کافی نیست"
+            "❌ مبلغ اشتباه است"
         )
 
-        return
+# ---------------- کاربران ----------------
 
-    bot.send_message(
-        message.chat.id,
-        "🚧 اتصال API هنوز انجام نشده"
-    )
-
-# کاربران
 @bot.message_handler(func=lambda m: m.text == "👥 کاربران")
 def users_list(message):
 
@@ -180,7 +249,9 @@ def users_list(message):
     for user_id in users:
 
         name = users[user_id]["name"]
+
         balance = users[user_id]["balance"]
+
         approved = users[user_id]["approved"]
 
         text += f"👤 {name}\n🆔 {user_id}\n💰 {balance}\n✅ تایید: {approved}\n\n"
@@ -190,7 +261,8 @@ def users_list(message):
         text
     )
 
-# شارژ کاربر
+# ---------------- شارژ کاربر ----------------
+
 @bot.message_handler(func=lambda m: m.text == "💳 شارژ کاربر")
 def charge_user(message):
 
@@ -201,3 +273,54 @@ def charge_user(message):
         message.chat.id,
         "آیدی و مبلغ را بفرست\n\nمثال:\n123456789 500"
     )
+
+    bot.register_next_step_handler(
+        msg,
+        process_charge
+    )
+
+def process_charge(message):
+
+    try:
+
+        users = load_users()
+
+        data = message.text.split()
+
+        user_id = data[0]
+
+        amount = int(data[1])
+
+        if user_id not in users:
+
+            bot.send_message(
+                message.chat.id,
+                "❌ کاربر پیدا نشد"
+            )
+
+            return
+
+        users[user_id]["balance"] += amount
+
+        save_users(users)
+
+        bot.send_message(
+            message.chat.id,
+            "✅ کیف پول شارژ شد"
+        )
+
+        bot.send_message(
+            int(user_id),
+            f"💰 کیف پول شما {amount} تومان شارژ شد"
+        )
+
+    except:
+
+        bot.send_message(
+            message.chat.id,
+            "❌ فرمت اشتباه است"
+        )
+
+print("BOT IS RUNNING...")
+
+bot.infinity_polling(skip_pending=True)
