@@ -210,14 +210,7 @@ def restart_menu(message):
         message.from_user.first_name,
         message.from_user.id
     )
-    @bot.message_handler(func=lambda m: m.text == "🚀 استارت")
-def restart_menu(message):
 
-    show_menu(
-        message.chat.id,
-        message.from_user.first_name,
-        message.from_user.id
-    )
 # ================= موجودی =================
 
 @bot.message_handler(func=lambda m: m.text == "💰 موجودی من")
