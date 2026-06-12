@@ -416,9 +416,20 @@ def vanix_charge(message):
         process_vanix
     )
 
+
+
+
 def process_vanix(message):
 
-    try:
+    bot.send_message(
+        message.chat.id,
+        "تست انجام شد"
+    )
+
+
+    
+
+        try:
 
         data = message.text.split()
 
