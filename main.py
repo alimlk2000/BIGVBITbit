@@ -279,7 +279,8 @@ def process_vanix(message):
         }
 
         payload = {
-            "summa": amount
+    "summa": amount,
+    "Confirm": True
         }
 
         response = requests.post(
