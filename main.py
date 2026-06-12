@@ -275,7 +275,7 @@ def process_vanix(message):
         url = f"https://partners.servcul.com/CashdeskBotAPI/Deposit/{vanix_id}/Add"
 
         headers = {
-    "X-API-KEY": MOBICASH_API_KEY
+    "ApiKey": MOBICASH_API_KEY
         }
 
         payload = {
