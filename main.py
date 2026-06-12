@@ -4,7 +4,6 @@ import json
 import os
 import requests
 import time
-import hashlib
 
 # ================= تنظیمات =================
 
@@ -12,13 +11,9 @@ TOKEN = "8888586418:AAEp5Ozd6c2R3y75X37C7BdML6gzqGtwJk8"
 
 ADMIN_ID = 7573910509
 
-# ================= هات ووچر =================
-
 HOTVOUCHER_SECURITY = "B5A92921FD1848FC3F1E297EFF3E18C0"
 
 HOTVOUCHER_PASSWORD = "@As1380ba"
-
-# ================= موبکش =================
 
 MOBICASH_API_KEY = "bb45891242ffede6e08607a0898679524a62edad4b7aae5335723e6488316388"
 
@@ -52,16 +47,6 @@ def save_users(data):
 
         json.dump(data, f)
 
-# ================= امضا =================
-
-def generate_sha256(data):
-
-    return hashlib.sha256(data.encode()).hexdigest()
-
-def generate_md5(data):
-
-    return hashlib.md5(data.encode()).hexdigest()
-
 # ================= قفل خرید =================
 
 BUY_LOCK = False
@@ -86,11 +71,9 @@ def show_menu(chat_id, name, user_id):
         btn6 = types.KeyboardButton("💳 شارژ کاربر")
         btn7 = types.KeyboardButton("🚫 مسدود کردن")
         btn8 = types.KeyboardButton("✅ رفع مسدودیت")
-        btn9 = types.KeyboardButton("🧪 تست موبکش")
 
         markup.add(btn5, btn6)
         markup.add(btn7, btn8)
-        markup.add(btn9)
 
     bot.send_message(
         chat_id,
@@ -161,7 +144,7 @@ def start(message):
         int(user_id)
     )
 
-# ================= تایید =================
+# ================= تایید کاربر =================
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
@@ -207,17 +190,6 @@ def balance(message):
 @bot.message_handler(func=lambda m: m.text == "🛒 خرید ووچر")
 def buy_voucher(message):
 
-    global BUY_LOCK
-
-    if BUY_LOCK:
-
-        bot.send_message(
-            message.chat.id,
-            "⏳ در حال پردازش درخواست‌های قبلی هستیم.\nلطفاً کمی بعد دوباره تلاش کنید."
-        )
-
-        return
-
     msg = bot.send_message(
         message.chat.id,
         "💰 مبلغ ووچر را به ریال وارد کنید"
@@ -230,114 +202,10 @@ def buy_voucher(message):
 
 def process_buy(message):
 
-    global BUY_LOCK
-
-    try:
-
-        BUY_LOCK = True
-
-        amount = int(message.text)
-
-        users = load_users()
-
-        user_id = str(message.from_user.id)
-
-        if users[user_id]["balance"] < amount:
-
-            BUY_LOCK = False
-
-            bot.send_message(
-                message.chat.id,
-                "❌ موجودی کافی نیست"
-            )
-
-            return
-
-        final_amount = int(amount * 0.95)
-
-        credit_url = f"http://amitex.biz/delegateapi/credit?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}"
-
-        credit_response = requests.get(credit_url).json()
-
-        if not credit_response["IsSuccess"]:
-
-            BUY_LOCK = False
-
-            bot.send_message(
-                message.chat.id,
-                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
-            )
-
-            return
-
-        hot_balance = int(credit_response["Data"])
-
-        if hot_balance < final_amount:
-
-            BUY_LOCK = False
-
-            bot.send_message(
-                message.chat.id,
-                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
-            )
-
-            return
-
-        create_url = f"http://amitex.biz/delegateapi/createhotvoucher?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&HotVoucherAmount={final_amount}"
-
-        create_response = requests.get(create_url).json()
-
-        if not create_response["IsSuccess"]:
-
-            BUY_LOCK = False
-
-            bot.send_message(
-                message.chat.id,
-                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
-            )
-
-            return
-
-        tracking_code = create_response["Data"]
-
-        time.sleep(10)
-
-        check_url = f"http://amitex.biz/delegateapi/checkhotvoucherstatus?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&TrackingCode={tracking_code}"
-
-        check_response = requests.get(check_url).json()
-
-        if check_response["IsSuccess"]:
-
-            voucher = check_response["Data"][0]["HotVoucher"]
-
-            users[user_id]["balance"] -= amount
-
-            save_users(users)
-
-            bot.send_message(
-                message.chat.id,
-                f"✅ ووچر صادر شد\n\n💰 مبلغ پرداختی:\n{amount:,} ریال\n\n🎫 کد ووچر:\n\n{voucher}"
-            )
-
-        else:
-
-            bot.send_message(
-                message.chat.id,
-                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
-            )
-
-        BUY_LOCK = False
-
-    except Exception as e:
-
-        print(e)
-
-        BUY_LOCK = False
-
-        bot.send_message(
-            message.chat.id,
-            "❌ خطا در خرید ووچر"
-        )
+    bot.send_message(
+        message.chat.id,
+        "⚠️ تست هات ووچر هنوز کامل نشده"
+    )
 
 # ================= فروش ووچر =================
 
@@ -356,50 +224,10 @@ def sell_voucher(message):
 
 def process_sell(message):
 
-    try:
-
-        voucher = message.text
-
-        check_url = f"http://amitex.biz/delegateapi/voucherstatus?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&HotVoucher={voucher}"
-
-        response = requests.get(check_url).json()
-
-        if response["IsSuccess"]:
-
-            data = response["Data"]
-
-            amount = int(data["Amount"])
-
-            final_amount = int(amount * 0.928)
-
-            users = load_users()
-
-            user_id = str(message.from_user.id)
-
-            users[user_id]["balance"] += final_amount
-
-            save_users(users)
-
-            bot.send_message(
-                message.chat.id,
-                f"✅ ووچر ثبت شد\n\n💰 مبلغ دریافتی:\n{final_amount:,} ریال"
-            )
-
-        else:
-
-            bot.send_message(
-                message.chat.id,
-                "❌ ووچر نامعتبر است"
-            )
-
-    except Exception as e:
-
-        print(e)
-
-        bot.send_message(
-            message.chat.id,
-            "❌ خطا در فروش ووچر"
-        )
+    bot.send_message(
+        message.chat.id,
+        "⚠️ فروش ووچر هنوز کامل نشده"
+    )
 
 # ================= شارژ وانیکس =================
 
@@ -416,9 +244,6 @@ def vanix_charge(message):
         process_vanix
     )
 
-
-
-
 def process_vanix(message):
 
     bot.send_message(
@@ -426,10 +251,7 @@ def process_vanix(message):
         "تست انجام شد"
     )
 
-
-    
-
-        try:
+    try:
 
         data = message.text.split()
 
@@ -503,7 +325,7 @@ def users_list(message):
 
     users = load_users()
 
-    text = "👥 کاربران:\n\n"
+    text = "👥 کاربران\n\n"
 
     for uid in users:
 
@@ -526,7 +348,7 @@ def charge_user(message):
 
     msg = bot.send_message(
         message.chat.id,
-        "آیدی و مبلغ را بفرست\n\nمثال:\n123456789 500000"
+        "آیدی و مبلغ را ارسال کنید\n\nمثال:\n123456789 500000"
     )
 
     bot.register_next_step_handler(
@@ -552,14 +374,17 @@ def process_charge(message):
 
         bot.send_message(
             message.chat.id,
-            "✅ کیف پول شارژ شد"
+            "✅ کیف پول کاربر شارژ شد"
         )
 
     except Exception as e:
 
-        print(e)
+        bot.send_message(
+            message.chat.id,
+            str(e)
+        )
 
-# ================= مسدود =================
+# ================= مسدود کردن =================
 
 @bot.message_handler(func=lambda m: m.text == "🚫 مسدود کردن")
 def block_user(message):
@@ -594,7 +419,7 @@ def process_block(message):
             "✅ کاربر مسدود شد"
         )
 
-# ================= رفع مسدود =================
+# ================= رفع مسدودیت =================
 
 @bot.message_handler(func=lambda m: m.text == "✅ رفع مسدودیت")
 def unblock_user(message):
@@ -627,39 +452,6 @@ def process_unblock(message):
         bot.send_message(
             message.chat.id,
             "✅ رفع مسدودیت شد"
-        )
-
-# ================= تست موبکش =================
-
-@bot.message_handler(func=lambda m: m.text == "🧪 تست موبکش")
-def test_mobicash(message):
-
-    if message.from_user.id != ADMIN_ID:
-        return
-
-    try:
-
-        url = "https://partners.servcul.com/CashdeskBotAPI/Credit"
-
-        headers = {
-            "Authorization": MOBICASH_API_KEY
-        }
-
-        response = requests.get(
-            url,
-            headers=headers
-        )
-
-        bot.send_message(
-            message.chat.id,
-            f"{response.status_code}\n\n{response.text}"
-        )
-
-    except Exception as e:
-
-        bot.send_message(
-            message.chat.id,
-            str(e)
         )
 
 # ================= اجرا =================
