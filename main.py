@@ -29,7 +29,17 @@ if not os.path.exists(DB_FILE):
 
     with open(DB_FILE, "w") as f:
 
-        json.dump({}, f)
+        json.dump(
+            {
+                str(ADMIN_ID): {
+                    "name": "ADMIN",
+                    "balance": 0,
+                    "approved": True,
+                    "blocked": False
+                }
+            },
+            f
+        )
 
 # ================= خواندن دیتابیس =================
 
