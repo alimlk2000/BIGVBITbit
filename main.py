@@ -65,25 +65,41 @@ BUY_LOCK = False
 
 def show_menu(chat_id, name, user_id):
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup = types.ReplyKeyboardMarkup(
+        resize_keyboard=True
+    )
 
     btn1 = types.KeyboardButton("💰 موجودی من")
-    btn2 = types.KeyboardButton("🛒 خرید ووچر")
-    btn3 = types.KeyboardButton("💸 فروش ووچر")
-    btn4 = types.KeyboardButton("💳 شارژ وانیکس")
+
+    btn2 = types.KeyboardButton("💳 شارژ مستقیم")
+
+    btn3 = types.KeyboardButton("💸 برداشت مستقیم")
+
+    btn4 = types.KeyboardButton("🛒 خرید ووچر")
+
+    btn5 = types.KeyboardButton("💵 فروش ووچر")
+
+    btn6 = types.KeyboardButton("🔄 استارت")
 
     markup.add(btn1, btn2)
+
     markup.add(btn3, btn4)
+
+    markup.add(btn5, btn6)
 
     if user_id == ADMIN_ID:
 
-        btn5 = types.KeyboardButton("👥 کاربران")
-        btn6 = types.KeyboardButton("💳 شارژ کاربر")
-        btn7 = types.KeyboardButton("🚫 مسدود کردن")
-        btn8 = types.KeyboardButton("✅ رفع مسدودیت")
+        btn7 = types.KeyboardButton("👥 کاربران")
 
-        markup.add(btn5, btn6)
+        btn8 = types.KeyboardButton("💳 شارژ کاربر")
+
+        btn9 = types.KeyboardButton("🚫 مسدود کردن")
+
+        btn10 = types.KeyboardButton("✅ رفع مسدودیت")
+
         markup.add(btn7, btn8)
+
+        markup.add(btn9, btn10)
 
     bot.send_message(
         chat_id,
@@ -178,7 +194,14 @@ def callback(call):
             call.id,
             "کاربر تایید شد"
         )
+@bot.message_handler(func=lambda m: m.text == "🔄 استارت")
+def restart_menu(message):
 
+    show_menu(
+        message.chat.id,
+        message.from_user.first_name,
+        message.from_user.id
+    )
 # ================= موجودی =================
 
 @bot.message_handler(func=lambda m: m.text == "💰 موجودی من")
