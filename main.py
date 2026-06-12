@@ -89,7 +89,7 @@ def show_menu(chat_id, name, user_id):
 
     btn5 = types.KeyboardButton("💵 فروش ووچر")
 
-    btn6 = types.KeyboardButton("🔄 استارت")
+    btn6 = types.KeyboardButton("🚀 استارت")
 
     markup.add(btn1, btn2)
 
@@ -205,6 +205,14 @@ def callback(call):
             "کاربر تایید شد"
         )
 @bot.message_handler(func=lambda m: m.text == "🔄 استارت")
+def restart_menu(message):
+
+    show_menu(
+        message.chat.id,
+        message.from_user.first_name,
+        message.from_user.id
+    )
+    @bot.message_handler(func=lambda m: m.text == "🚀 استارت")
 def restart_menu(message):
 
     show_menu(
