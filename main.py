@@ -89,13 +89,11 @@ def show_menu(chat_id, name, user_id):
 
     btn5 = types.KeyboardButton("💵 فروش ووچر")
 
-    btn6 = types.KeyboardButton("🚀 استارت")
-
     markup.add(btn1, btn2)
 
     markup.add(btn3, btn4)
 
-    markup.add(btn5, btn6)
+    markup.add(btn5)
 
     if user_id == ADMIN_ID:
 
