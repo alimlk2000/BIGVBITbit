@@ -35,16 +35,21 @@ except:
 
     with open(DB_FILE, "w") as file:
 
-        json.dump({}, file)
-                str(ADMIN_ID): {
-                    "name": "ADMIN",
-                    "balance": 0,
-                    "approved": True,
-                    "blocked": False
-                }
-            },
-            f
-        )
+        json.dump({
+
+            str(ADMIN_ID): {
+
+                "name": "ADMIN",
+
+                "balance": 0,
+
+                "approved": True,
+
+                "blocked": False
+
+            }
+
+        }, file)
 
 # ================= خواندن دیتابیس =================
 
