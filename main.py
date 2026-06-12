@@ -11,7 +11,17 @@ TOKEN = "8888586418:AAEp5Ozd6c2R3y75X37C7BdML6gzqGtwJk8"
 
 ADMIN_ID = 7573910509
 
-HOTWATCHER_API = "B5A92921FD1848FC3F1E297EFF3E18C0"
+# ================= هات ووچر =================
+
+HOTVOUCHER_SECURITY = "B5A92921FD1848FC3F1E297EFF3E18C0"
+
+HOTVOUCHER_PASSWORD = "@As1380ba"
+
+# ================= موبکش =================
+
+MOBICASH_API_KEY = "bb45891242ffede6e08607a0898679524a62edad4b7aae5335723e6488316388"
+
+# ================= ربات =================
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -22,23 +32,30 @@ DB_FILE = "users.json"
 if not os.path.exists(DB_FILE):
 
     with open(DB_FILE, "w") as f:
+
         json.dump({}, f)
 
-# ================= خواندن کاربران =================
+# ================= خواندن دیتابیس =================
 
 def load_users():
 
     with open(DB_FILE, "r") as f:
+
         return json.load(f)
 
-# ================= ذخیره کاربران =================
+# ================= ذخیره دیتابیس =================
 
 def save_users(data):
 
     with open(DB_FILE, "w") as f:
+
         json.dump(data, f)
 
-# ================= منوی اصلی =================
+# ================= قفل خرید =================
+
+BUY_LOCK = False
+
+# ================= منو =================
 
 def show_menu(chat_id, name, user_id):
 
@@ -51,13 +68,15 @@ def show_menu(chat_id, name, user_id):
     markup.add(btn1, btn2)
     markup.add(btn3)
 
-    # پنل ادمین
     if user_id == ADMIN_ID:
 
         btn4 = types.KeyboardButton("👥 کاربران")
         btn5 = types.KeyboardButton("💳 شارژ کاربر")
+        btn6 = types.KeyboardButton("🚫 مسدود کردن")
+        btn7 = types.KeyboardButton("✅ رفع مسدودیت")
 
         markup.add(btn4, btn5)
+        markup.add(btn6, btn7)
 
     bot.send_message(
         chat_id,
@@ -76,13 +95,13 @@ def start(message):
 
     name = message.from_user.first_name
 
-    # ثبت کاربر جدید
     if user_id not in users:
 
         users[user_id] = {
             "name": name,
             "balance": 0,
-            "approved": False
+            "approved": False,
+            "blocked": False
         }
 
         save_users(users)
@@ -104,7 +123,15 @@ def start(message):
 
     users = load_users()
 
-    # اگر تایید نشده
+    if users[user_id]["blocked"]:
+
+        bot.send_message(
+            message.chat.id,
+            "⛔ حساب شما مسدود شده است"
+        )
+
+        return
+
     if users[user_id]["approved"] == False:
 
         bot.send_message(
@@ -135,22 +162,14 @@ def callback(call):
 
         save_users(users)
 
-        name = users[user_id]["name"]
-
         bot.send_message(
             int(user_id),
             "✅ حساب شما تایید شد"
         )
 
-        show_menu(
-            int(user_id),
-            name,
-            int(user_id)
-        )
-
         bot.answer_callback_query(
             call.id,
-            "کاربر تایید شد ✅"
+            "کاربر تایید شد"
         )
 
 # ================= موجودی =================
@@ -166,17 +185,28 @@ def balance(message):
 
     bot.send_message(
         message.chat.id,
-        f"💰 موجودی شما: {balance}"
+        f"💰 موجودی شما:\n\n{int(balance):,} ریال"
     )
 
 # ================= خرید ووچر =================
 
 @bot.message_handler(func=lambda m: m.text == "🛒 خرید ووچر")
-def buy(message):
+def buy_voucher(message):
+
+    global BUY_LOCK
+
+    if BUY_LOCK:
+
+        bot.send_message(
+            message.chat.id,
+            "⏳ در حال پردازش درخواست‌های قبلی هستیم.\nلطفاً کمی بعد دوباره تلاش کنید."
+        )
+
+        return
 
     msg = bot.send_message(
         message.chat.id,
-        "مبلغ ووچر را وارد کنید"
+        "💰 مبلغ ووچر را به ریال وارد کنید"
     )
 
     bot.register_next_step_handler(
@@ -186,17 +216,29 @@ def buy(message):
 
 def process_buy(message):
 
+    global BUY_LOCK
+
     try:
 
-        amount = float(message.text)
+        BUY_LOCK = True
+
+        amount = int(message.text)
 
         users = load_users()
 
         user_id = str(message.from_user.id)
 
+        if users[user_id]["blocked"]:
+
+            BUY_LOCK = False
+
+            return
+
         balance = users[user_id]["balance"]
 
         if balance < amount:
+
+            BUY_LOCK = False
 
             bot.send_message(
                 message.chat.id,
@@ -205,27 +247,70 @@ def process_buy(message):
 
             return
 
-        headers = {
-            "authorization": HOTWATCHER_API,
-            "Content-Type": "application/json"
-        }
+        # کسر 5 درصد
 
-        data = {
-            "coin": "USDT",
-            "amount": str(amount)
-        }
+        final_amount = int(amount * 0.95)
 
-        response = requests.post(
-            "https://api.uwallet.biz/v1/voucher",
-            headers=headers,
-            json=data
-        )
+        # چک موجودی هات ووچر
 
-        result = response.json()
+        credit_url = f"http://amitex.biz/delegateapi/credit?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}"
 
-        if "code" in result:
+        credit_response = requests.get(credit_url).json()
 
-            voucher = result["code"]
+        if not credit_response["IsSuccess"]:
+
+            BUY_LOCK = False
+
+            bot.send_message(
+                message.chat.id,
+                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
+            )
+
+            return
+
+        hot_balance = int(credit_response["Data"])
+
+        if hot_balance < final_amount:
+
+            BUY_LOCK = False
+
+            bot.send_message(
+                message.chat.id,
+                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
+            )
+
+            return
+
+        # ساخت ووچر
+
+        create_url = f"http://amitex.biz/delegateapi/createhotvoucher?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&HotVoucherAmount={final_amount}"
+
+        create_response = requests.get(create_url).json()
+
+        if not create_response["IsSuccess"]:
+
+            BUY_LOCK = False
+
+            bot.send_message(
+                message.chat.id,
+                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
+            )
+
+            return
+
+        tracking_code = create_response["Data"]
+
+        time.sleep(10)
+
+        # دریافت ووچر
+
+        check_url = f"http://amitex.biz/delegateapi/checkhotvoucherstatus?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&TrackingCode={tracking_code}"
+
+        check_response = requests.get(check_url).json()
+
+        if check_response["IsSuccess"]:
+
+            voucher = check_response["Data"][0]["HotVoucher"]
 
             users[user_id]["balance"] -= amount
 
@@ -233,19 +318,23 @@ def process_buy(message):
 
             bot.send_message(
                 message.chat.id,
-                f"✅ ووچر ساخته شد\n\n🎫 کد ووچر:\n{voucher}"
+                f"✅ ووچر صادر شد\n\n💰 مبلغ پرداختی:\n{amount:,} ریال\n\n🎫 کد ووچر:\n\n{voucher}"
             )
 
         else:
 
             bot.send_message(
                 message.chat.id,
-                f"❌ خطا:\n{result}"
+                "⚠️ سرویس صدور ووچر موقتاً در دسترس نیست.\nلطفاً چند دقیقه دیگر دوباره تلاش کنید."
             )
+
+        BUY_LOCK = False
 
     except Exception as e:
 
         print(e)
+
+        BUY_LOCK = False
 
         bot.send_message(
             message.chat.id,
@@ -259,53 +348,43 @@ def sell_voucher(message):
 
     msg = bot.send_message(
         message.chat.id,
-        "کد ووچر را ارسال کنید"
+        "🎫 کد ووچر را ارسال کنید"
     )
 
     bot.register_next_step_handler(
         msg,
-        process_sell_voucher
+        process_sell
     )
 
-def process_sell_voucher(message):
+def process_sell(message):
 
     try:
 
-        code = message.text
+        voucher = message.text
 
-        headers = {
-            "authorization": HOTWATCHER_API,
-            "Content-Type": "application/json"
-        }
+        check_url = f"http://amitex.biz/delegateapi/voucherstatus?SecurityCode={HOTVOUCHER_SECURITY}&Password={HOTVOUCHER_PASSWORD}&HotVoucher={voucher}"
 
-        data = {
-            "coin": "USDT",
-            "code": code
-        }
+        response = requests.get(check_url).json()
 
-        response = requests.post(
-            "https://api.uwallet.biz/v1/voucher/use",
-            headers=headers,
-            json=data
-        )
+        if response["IsSuccess"]:
 
-        result = response.json()
+            data = response["Data"]
 
-        if result.get("status") == "confirm":
+            amount = int(data["Amount"])
 
-            amount = float(result["receive"])
+            final_amount = int(amount * 0.928)
 
             users = load_users()
 
             user_id = str(message.from_user.id)
 
-            users[user_id]["balance"] += amount
+            users[user_id]["balance"] += final_amount
 
             save_users(users)
 
             bot.send_message(
                 message.chat.id,
-                f"✅ ووچر نقد شد\n\n💰 مبلغ: {amount}"
+                f"✅ ووچر ثبت شد\n\n💰 مبلغ دریافتی:\n{final_amount:,} ریال"
             )
 
         else:
@@ -330,21 +409,18 @@ def process_sell_voucher(message):
 def users_list(message):
 
     if message.from_user.id != ADMIN_ID:
+
         return
 
     users = load_users()
 
-    text = "👥 کاربران:\n\n"
+    text = "👥 لیست کاربران\n\n"
 
-    for user_id in users:
+    for uid in users:
 
-        name = users[user_id]["name"]
+        user = users[uid]
 
-        balance = users[user_id]["balance"]
-
-        approved = users[user_id]["approved"]
-
-        text += f"👤 {name}\n🆔 {user_id}\n💰 {balance}\n✅ تایید: {approved}\n\n"
+        text += f"👤 {user['name']}\n🆔 {uid}\n💰 {int(user['balance']):,} ریال\n\n"
 
     bot.send_message(
         message.chat.id,
@@ -357,11 +433,12 @@ def users_list(message):
 def charge_user(message):
 
     if message.from_user.id != ADMIN_ID:
+
         return
 
     msg = bot.send_message(
         message.chat.id,
-        "آیدی و مبلغ را بفرست\n\nمثال:\n123456789 500"
+        "آیدی و مبلغ را بفرست\n\nمثال:\n123456789 500000"
     )
 
     bot.register_next_step_handler(
@@ -373,22 +450,13 @@ def process_charge(message):
 
     try:
 
-        users = load_users()
-
         data = message.text.split()
 
         user_id = data[0]
 
-        amount = float(data[1])
+        amount = int(data[1])
 
-        if user_id not in users:
-
-            bot.send_message(
-                message.chat.id,
-                "❌ کاربر پیدا نشد"
-            )
-
-            return
+        users = load_users()
 
         users[user_id]["balance"] += amount
 
@@ -396,12 +464,12 @@ def process_charge(message):
 
         bot.send_message(
             message.chat.id,
-            "✅ کیف پول شارژ شد"
+            "✅ کیف پول کاربر شارژ شد"
         )
 
         bot.send_message(
             int(user_id),
-            f"💰 کیف پول شما {amount} شارژ شد"
+            f"💰 کیف پول شما\n\n{amount:,} ریال\nشارژ شد"
         )
 
     except Exception as e:
@@ -410,10 +478,83 @@ def process_charge(message):
 
         bot.send_message(
             message.chat.id,
-            "❌ فرمت اشتباه است"
+            "❌ خطا"
         )
 
-# ================= اجرای دائمی =================
+# ================= مسدود کردن =================
+
+@bot.message_handler(func=lambda m: m.text == "🚫 مسدود کردن")
+def block_user(message):
+
+    if message.from_user.id != ADMIN_ID:
+
+        return
+
+    msg = bot.send_message(
+        message.chat.id,
+        "آیدی کاربر را ارسال کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        process_block
+    )
+
+def process_block(message):
+
+    users = load_users()
+
+    user_id = message.text
+
+    if user_id in users:
+
+        users[user_id]["blocked"] = True
+
+        save_users(users)
+
+        bot.send_message(
+            message.chat.id,
+            "✅ کاربر مسدود شد"
+        )
+
+# ================= رفع مسدودیت =================
+
+@bot.message_handler(func=lambda m: m.text == "✅ رفع مسدودیت")
+def unblock_user(message):
+
+    if message.from_user.id != ADMIN_ID:
+
+        return
+
+    msg = bot.send_message(
+        message.chat.id,
+        "آیدی کاربر را ارسال کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        process_unblock
+    )
+
+def process_unblock(message):
+
+    users = load_users()
+
+    user_id = message.text
+
+    if user_id in users:
+
+        users[user_id]["blocked"] = False
+
+        save_users(users)
+
+        bot.send_message(
+            message.chat.id,
+            "✅ کاربر رفع مسدودیت شد"
+
+        )
+
+# ================= اجرا =================
 
 print("BOT IS RUNNING...")
 
