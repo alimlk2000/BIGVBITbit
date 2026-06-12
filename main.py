@@ -25,12 +25,17 @@ DB_FILE = "users.json"
 
 # ================= ساخت دیتابیس =================
 
-if not os.path.exists(DB_FILE):
+try:
 
-    with open(DB_FILE, "w") as f:
+    with open(DB_FILE, "r") as file:
 
-        json.dump(
-            {
+        json.load(file)
+
+except:
+
+    with open(DB_FILE, "w") as file:
+
+        json.dump({}, file)
                 str(ADMIN_ID): {
                     "name": "ADMIN",
                     "balance": 0,
