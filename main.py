@@ -403,9 +403,9 @@ def process_sell(message):
         "⚠️ فروش ووچر هنوز کامل نشده"
     )
 
-# ================= شارژ وانیکس =================
+# ================= شارژ مستقیم =================
 
-@bot.message_handler(func=lambda m: m.text == "💳 شارژ وانیکس")
+@bot.message_handler(func=lambda m: m.text == "💳 شارژ مستقیم")
 def vanix_charge(message):
 
     msg = bot.send_message(
@@ -418,12 +418,8 @@ def vanix_charge(message):
         process_vanix
     )
 
-def process_vanix(message):
 
-    bot.send_message(
-        message.chat.id,
-        "تست انجام شد"
-    )
+def process_vanix(message):
 
     try:
 
@@ -477,14 +473,14 @@ def process_vanix(message):
 
             bot.send_message(
                 message.chat.id,
-                f"✅ درخواست شارژ ارسال شد\n\n📨 پاسخ سرور:\n{result}"
+                f"✅ درخواست شارژ ارسال شد\n\n{result}"
             )
 
         else:
 
             bot.send_message(
                 message.chat.id,
-                f"❌ خطا در اتصال موبکش\n\n{result}"
+                f"❌ خطا\n\n{result}"
             )
 
     except Exception as e:
@@ -494,6 +490,49 @@ def process_vanix(message):
             str(e)
         )
 
+
+# ================= برداشت مستقیم =================
+
+@bot.message_handler(func=lambda m: m.text == "💸 برداشت مستقیم")
+def withdraw_direct(message):
+
+    bot.send_message(
+        message.chat.id,
+        "⚠️ بخش برداشت مستقیم بزودی فعال میشود"
+    )
+
+
+# ================= خرید هات ووچر =================
+
+@bot.message_handler(func=lambda m: m.text == "🛒 خرید هات ووچر")
+def buy_hot_voucher(message):
+
+    bot.send_message(
+        message.chat.id,
+        "⚠️ خرید هات ووچر بزودی فعال میشود"
+    )
+
+
+# ================= خرید یو ووچر =================
+
+@bot.message_handler(func=lambda m: m.text == "🛍 خرید یو ووچر")
+def buy_uvoucher(message):
+
+    bot.send_message(
+        message.chat.id,
+        "⚠️ خرید یو ووچر بزودی فعال میشود"
+    )
+
+
+# ================= فروش یو ووچر =================
+
+@bot.message_handler(func=lambda m: m.text == "💵 فروش یو ووچر")
+def sell_uvoucher(message):
+
+    bot.send_message(
+        message.chat.id,
+        "⚠️ فروش یو ووچر بزودی فعال میشود"
+    )
 # ================= کاربران =================
 
 @bot.message_handler(func=lambda m: m.text == "👥 کاربران")
