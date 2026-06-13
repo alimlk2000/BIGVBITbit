@@ -609,11 +609,21 @@ while True:
 
     try:
 
+        print("BOT STARTED")
+
+while True:
+
+    try:
+
         bot.infinity_polling(
             skip_pending=True,
             timeout=60,
             long_polling_timeout=60
         )
+
+    except Exception as e:
+
+        print(e)
 
     except Exception as e:
 
