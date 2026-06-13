@@ -73,110 +73,46 @@ BUY_LOCK = False
 
 # ================= منو =================
 
-def show_menu(chat_id, name, user_id):
+ def show_menu(chat_id, name, user_id):
 
     markup = types.ReplyKeyboardMarkup(
-    resize_keyboard=True,
-    row_width=2
+        resize_keyboard=True,
+        row_width=2
     )
 
     btn1 = types.KeyboardButton("💳 شارژ مستقیم")
-btn2 = types.KeyboardButton("💸 برداشت مستقیم")
+    btn2 = types.KeyboardButton("💸 برداشت مستقیم")
 
-btn3 = types.KeyboardButton("🛒 خرید هات ووچر")
-btn4 = types.KeyboardButton("🛍 خرید یو ووچر")
+    btn3 = types.KeyboardButton("🛒 خرید هات ووچر")
+    btn4 = types.KeyboardButton("🛍 خرید یو ووچر")
 
-btn5 = types.KeyboardButton("💵 فروش یو ووچر")
-btn6 = types.KeyboardButton("➕ افزایش اعتبار")
+    btn5 = types.KeyboardButton("💵 فروش یو ووچر")
+    btn6 = types.KeyboardButton("➕ افزایش اعتبار")
 
-btn7 = types.KeyboardButton("💰 موجودی من")
-btn8 = types.KeyboardButton("🏦 تسویه ریالی")
+    btn7 = types.KeyboardButton("💰 موجودی من")
+    btn8 = types.KeyboardButton("🏦 تسویه ریالی")
 
-markup.add(btn1, btn2)
-markup.add(btn3, btn4)
-markup.add(btn5, btn6)
-markup.add(btn7)
-markup.add(btn8)
+    markup.add(btn1, btn2)
+    markup.add(btn3, btn4)
+    markup.add(btn5, btn6)
+    markup.add(btn7)
+    markup.add(btn8)
 
     if user_id == ADMIN_ID:
 
-        btn9 = types.KeyboardButton("👥 کاربران")
-        btn10 = types.KeyboardButton("💳 شارژ کاربر")
-        btn11 = types.KeyboardButton("🚫 مسدود کردن")
-        btn12 = types.KeyboardButton("✅ رفع مسدودیت")
+        admin1 = types.KeyboardButton("👥 کاربران")
+        admin2 = types.KeyboardButton("💳 شارژ کاربر")
+        admin3 = types.KeyboardButton("🚫 مسدود کردن")
+        admin4 = types.KeyboardButton("✅ رفع مسدودیت")
 
-        markup.add(btn9, btn10)
-        markup.add(btn11, btn12)
+        markup.add(admin1, admin2)
+        markup.add(admin3, admin4)
 
     bot.send_message(
         chat_id,
         f"سلام {name} 👋",
         reply_markup=markup
     )
-
-# ================= استارت =================
-
-@bot.message_handler(commands=['start'])
-def start(message):
-
-    users = load_users()
-
-    user_id = str(message.from_user.id)
-
-    name = message.from_user.first_name
-
-    if user_id not in users:
-
-        users[user_id] = {
-            "name": name,
-            "balance": 0,
-            "approved": False,
-            "blocked": False
-        }
-
-        save_users(users)
-
-        markup = types.InlineKeyboardMarkup()
-
-        btn = types.InlineKeyboardButton(
-            "✅ تایید کاربر",
-            callback_data=f"approve_{user_id}"
-        )
-
-        markup.add(btn)
-
-        bot.send_message(
-            ADMIN_ID,
-            f"🆕 کاربر جدید\n\n👤 {name}\n🆔 {user_id}",
-            reply_markup=markup
-        )
-
-    users = load_users()
-
-    if users[user_id]["blocked"]:
-
-        bot.send_message(
-            message.chat.id,
-            "⛔ حساب شما مسدود شده است"
-        )
-
-        return
-
-    if users[user_id]["approved"] == False:
-
-        bot.send_message(
-            message.chat.id,
-            "⏳ حساب شما در انتظار تایید ادمین است"
-        )
-
-        return
-
-    show_menu(
-        message.chat.id,
-        name,
-        int(user_id)
-    )
-
 # ================= تایید کاربر =================
 
 @bot.callback_query_handler(func=lambda call: True)
