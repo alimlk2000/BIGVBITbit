@@ -633,6 +633,8 @@ def process_unblock(message):
 
 print("BOT STARTED")
 
+bot.remove_webhook()
+
 bot.infinity_polling(
     skip_pending=True,
     timeout=60,
