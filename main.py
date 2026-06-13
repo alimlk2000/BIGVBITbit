@@ -76,27 +76,27 @@ BUY_LOCK = False
 def show_menu(chat_id, name, user_id):
 
     markup = types.ReplyKeyboardMarkup(
-        resize_keyboard=True
+    resize_keyboard=True,
+    row_width=2
     )
 
     btn1 = types.KeyboardButton("💳 شارژ مستقیم")
-    btn2 = types.KeyboardButton("💸 برداشت مستقیم")
+btn2 = types.KeyboardButton("💸 برداشت مستقیم")
 
-    btn3 = types.KeyboardButton("🛒 خرید هات ووچر")
-    btn4 = types.KeyboardButton("🎫 خرید یو ووچر")
+btn3 = types.KeyboardButton("🛒 خرید هات ووچر")
+btn4 = types.KeyboardButton("🛍 خرید یو ووچر")
 
-    btn5 = types.KeyboardButton("💵 فروش یو ووچر")
-    btn6 = types.KeyboardButton("➕ افزایش اعتبار")
+btn5 = types.KeyboardButton("💵 فروش یو ووچر")
+btn6 = types.KeyboardButton("➕ افزایش اعتبار")
 
-    btn7 = types.KeyboardButton("🏦 تسویه ریالی")
-    btn8 = types.KeyboardButton("💰 موجودی من")
+btn7 = types.KeyboardButton("💰 موجودی من")
+btn8 = types.KeyboardButton("🏦 تسویه ریالی")
 
-    markup.add(btn1, btn2)
-    markup.add(btn3, btn4)
-    markup.add(btn5)
-    markup.add(btn6)
-    markup.add(btn7)
-    markup.add(btn8)
+markup.add(btn1, btn2)
+markup.add(btn3, btn4)
+markup.add(btn5, btn6)
+markup.add(btn7)
+markup.add(btn8)
 
     if user_id == ADMIN_ID:
 
