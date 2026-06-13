@@ -467,8 +467,7 @@ def process_vanix(message):
 print(response.status_code)
 print(response.text)
 
-        result = response.text
-
+result = response.text
         if response.status_code == 200:
 
             users[user_id]["balance"] -= amount
