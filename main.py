@@ -73,7 +73,7 @@ BUY_LOCK = False
 
 # ================= منو =================
 
- def show_menu(chat_id, name, user_id):
+def show_menu(chat_id, name, user_id):
 
     markup = types.ReplyKeyboardMarkup(
         resize_keyboard=True,
