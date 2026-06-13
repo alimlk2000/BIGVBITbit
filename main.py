@@ -147,6 +147,34 @@ def restart_menu(message):
         message.from_user.id
     )
 
+# ================= استارت =================
+
+@bot.message_handler(commands=['start'])
+def start(message):
+
+    users = load_users()
+
+    user_id = str(message.from_user.id)
+
+    name = message.from_user.first_name
+
+    if user_id not in users:
+
+        users[user_id] = {
+            "name": name,
+            "balance": 0,
+            "approved": True,
+            "blocked": False
+        }
+
+        save_users(users)
+
+    show_menu(
+        message.chat.id,
+        name,
+        message.from_user.id
+    )
+    
 # ================= موجودی =================
 
 @bot.message_handler(func=lambda m: m.text == "💰 موجودی من")
