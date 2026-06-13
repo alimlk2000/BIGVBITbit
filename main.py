@@ -79,35 +79,34 @@ def show_menu(chat_id, name, user_id):
         resize_keyboard=True
     )
 
-    btn1 = types.KeyboardButton("💰 موجودی من")
+    btn1 = types.KeyboardButton("💳 شارژ مستقیم")
+    btn2 = types.KeyboardButton("💸 برداشت مستقیم")
 
-    btn2 = types.KeyboardButton("💳 شارژ مستقیم")
+    btn3 = types.KeyboardButton("🛒 خرید هات ووچر")
+    btn4 = types.KeyboardButton("🎫 خرید یو ووچر")
 
-    btn3 = types.KeyboardButton("💸 برداشت مستقیم")
+    btn5 = types.KeyboardButton("💵 فروش یو ووچر")
+    btn6 = types.KeyboardButton("➕ افزایش اعتبار")
 
-    btn4 = types.KeyboardButton("🛒 خرید ووچر")
-
-    btn5 = types.KeyboardButton("💵 فروش ووچر")
+    btn7 = types.KeyboardButton("🏦 تسویه ریالی")
+    btn8 = types.KeyboardButton("💰 موجودی من")
 
     markup.add(btn1, btn2)
-
     markup.add(btn3, btn4)
-
     markup.add(btn5)
+    markup.add(btn6)
+    markup.add(btn7)
+    markup.add(btn8)
 
     if user_id == ADMIN_ID:
 
-        btn7 = types.KeyboardButton("👥 کاربران")
-
-        btn8 = types.KeyboardButton("💳 شارژ کاربر")
-
-        btn9 = types.KeyboardButton("🚫 مسدود کردن")
-
-        btn10 = types.KeyboardButton("✅ رفع مسدودیت")
-
-        markup.add(btn7, btn8)
+        btn9 = types.KeyboardButton("👥 کاربران")
+        btn10 = types.KeyboardButton("💳 شارژ کاربر")
+        btn11 = types.KeyboardButton("🚫 مسدود کردن")
+        btn12 = types.KeyboardButton("✅ رفع مسدودیت")
 
         markup.add(btn9, btn10)
+        markup.add(btn11, btn12)
 
     bot.send_message(
         chat_id,
@@ -227,6 +226,174 @@ def balance(message):
         f"💰 موجودی شما:\n\n{int(balance):,} ریال"
     )
 
+# ================= افزایش اعتبار =================
+
+@bot.message_handler(func=lambda m: m.text == "➕ افزایش اعتبار")
+def increase_balance(message):
+
+    text = """
+💳 جهت افزایش اعتبار مبلغ را به کارت زیر واریز کنید
+
+6037-9999-9999-9999
+
+👤 به نام:
+ALI SALIMI
+
+⚠️ لطفا از سامانه های پل / پایا / ساتنا استفاده نکنید
+"""
+
+    markup = types.ReplyKeyboardMarkup(
+        resize_keyboard=True
+    )
+
+    btn = types.KeyboardButton("📤 ارسال رسید")
+
+    markup.add(btn)
+
+    bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup=markup
+    )
+
+
+@bot.message_handler(func=lambda m: m.text == "📤 ارسال رسید")
+def send_receipt(message):
+
+    msg = bot.send_message(
+        message.chat.id,
+        "📷 لطفا رسید را ارسال کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        receipt_step
+    )
+
+
+def receipt_step(message):
+
+    if not message.photo:
+        bot.send_message(
+            message.chat.id,
+            "❌ لطفا عکس ارسال کنید"
+        )
+        return
+
+    caption = f"""
+📥 رسید جدید افزایش اعتبار
+
+👤 نام:
+{message.from_user.first_name}
+
+🆔 آیدی:
+{message.from_user.id}
+"""
+
+    bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
+        caption=caption
+    )
+
+    bot.send_message(
+        message.chat.id,
+        "✅ رسید ارسال شد"
+    )
+
+# ================= تسویه ریالی =================
+
+@bot.message_handler(func=lambda m: m.text == "🏦 تسویه ریالی")
+def rial_settle(message):
+
+    users = load_users()
+
+    user_id = str(message.from_user.id)
+
+    balance = users[user_id]["balance"]
+
+    msg = bot.send_message(
+        message.chat.id,
+        f"💰 موجودی شما: {balance:,} ریال\n\nمبلغ را وارد کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        settle_amount
+    )
+
+
+def settle_amount(message):
+
+    amount = int(message.text)
+
+    users = load_users()
+
+    user_id = str(message.from_user.id)
+
+    if users[user_id]["balance"] < amount:
+
+        bot.send_message(
+            message.chat.id,
+            "❌ موجودی کافی نیست"
+        )
+        return
+
+    users[user_id]["temp_settle"] = amount
+
+    save_users(users)
+
+    msg = bot.send_message(
+        message.chat.id,
+        "💳 شماره کارت جهت واریز را ارسال کنید"
+    )
+
+    bot.register_next_step_handler(
+        msg,
+        settle_card
+    )
+
+
+def settle_card(message):
+
+    card = message.text
+
+    users = load_users()
+
+    user_id = str(message.from_user.id)
+
+    amount = users[user_id]["temp_settle"]
+
+    users[user_id]["balance"] -= amount
+
+    save_users(users)
+
+    text = f"""
+📤 درخواست تسویه ریالی
+
+👤 نام:
+{message.from_user.first_name}
+
+🆔 آیدی:
+{message.from_user.id}
+
+💰 مبلغ:
+{amount:,} ریال
+
+💳 شماره کارت:
+{card}
+"""
+
+    bot.send_message(
+        ADMIN_ID,
+        text
+    )
+
+    bot.send_message(
+        message.chat.id,
+        "✅ تمامی تسویه های ریالی تا 12 ساعت آینده به حساب شما واریز خواهد شد"
+    )
+    
 # ================= خرید ووچر =================
 
 @bot.message_handler(func=lambda m: m.text == "🛒 خرید ووچر")
