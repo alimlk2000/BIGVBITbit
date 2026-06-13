@@ -113,6 +113,7 @@ BUY_LOCK = False
         f"سلام {name} 👋",
         reply_markup=markup
     )
+     
 # ================= تایید کاربر =================
 
 @bot.callback_query_handler(func=lambda call: True)
