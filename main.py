@@ -449,7 +449,8 @@ def process_vanix(message):
         url = f"https://partners.servcul.com/CashdeskBotAPI/Deposit/{vanix_id}/Add"
 
         headers = {
-    "ApiKey": MOBICASH_API_KEY
+    "X-API-KEY": MOBICASH_API_KEY,
+    "Content-Type": "application/json"
         }
 
         payload = {
@@ -458,10 +459,13 @@ def process_vanix(message):
         }
 
         response = requests.post(
-            url,
-            json=payload,
-            headers=headers
-        )
+    url,
+    json=payload,
+    headers=headers
+)
+
+print(response.status_code)
+print(response.text)
 
         result = response.text
 
